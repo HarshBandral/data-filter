@@ -27,8 +27,8 @@ const ANGRY_EMOJIS  = ['💢', '🔥', '⚡', '💥'];
 // ── Audio ─────────────────────────────────────────────────────────────────────
 
 const audio = {
-  yes: new Audio('niconiconilovesyou-3_cutted.mp3.mpeg'),
-  no:  new Audio('you_were_banned_1_ZBqWsq8.mp3.mpeg'),
+  yes: new Audio('niconiconilovesyou-3_cutted.mp3'),
+  no:  new Audio('you_were_banned_1_ZBqWsq8.mp3'),
 };
 
 // ── App State ─────────────────────────────────────────────────────────────────
@@ -272,20 +272,24 @@ function updateProcessButton() {
 
 // ── Processing ─────────────────────────────────────────────────────────────────
 
-function handleProcess() {
-  setButtonLoading(dom.processBtn, true, '⚙️', 'Run Filter');
+/**
+ * Yields control back to the browser so it can paint (e.g. show a spinner)
+ * before synchronous heavy work begins.
+ * @returns {Promise<void>}
+ */
+function yieldToBrowser() {
+  return new Promise(resolve => setTimeout(resolve, 20));
+}
 
-  // Defer to next frame so the spinner renders before the synchronous work blocks the thread
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      try {
-        runFilterPipeline();
-      } catch (err) {
-        showStatus(`Unexpected error: ${err.message}`, 'error');
-        setButtonLoading(dom.processBtn, false, '⚙️', 'Run Filter');
-      }
-    }, 50);
-  });
+async function handleProcess() {
+  setButtonLoading(dom.processBtn, true, '⚙️', 'Run Filter');
+  await yieldToBrowser(); // let browser paint the spinner before blocking work
+  try {
+    runFilterPipeline();
+  } catch (err) {
+    showStatus(`Unexpected error: ${err.message}`, 'error');
+    setButtonLoading(dom.processBtn, false, '⚙️', 'Run Filter');
+  }
 }
 function runFilterPipeline() {
   showStatus('Processing…', 'info');
@@ -410,22 +414,17 @@ function buildOutputWorkbook(rows) {
 
 // ── Download ───────────────────────────────────────────────────────────────────
 
-function handleDownload() {
+async function handleDownload() {
   if (!state.filteredWorkbook) return;
 
   setButtonLoading(dom.downloadBtn, true, '⬇', 'Download Excel');
-
-  // Let the spinner render before XLSX blocks the thread
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      try {
-        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-        XLSX.writeFile(state.filteredWorkbook, `filtered_data_${timestamp}.xlsx`);
-      } finally {
-        setButtonLoading(dom.downloadBtn, false, '⬇', 'Download Excel');
-      }
-    }, 50);
-  });
+  await yieldToBrowser(); // let browser paint the spinner before blocking write
+  try {
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    XLSX.writeFile(state.filteredWorkbook, `filtered_data_${timestamp}.xlsx`);
+  } finally {
+    setButtonLoading(dom.downloadBtn, false, '⬇', 'Download Excel');
+  }
 }
 
 // ── UI Helpers ─────────────────────────────────────────────────────────────────
