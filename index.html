@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Filter Tool</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+
+  <!-- ── Welcome / Gate Screen ───────────────────────────── -->
+  <div id="welcomeScreen" class="screen screen--welcome">
+    <div class="welcome__card">
+      <div class="welcome__emoji" id="welcomeEmoji">🤔</div>
+      <h1 class="welcome__question">Do you love FKH?</h1>
+      <div class="welcome__buttons">
+        <button class="welcome__btn welcome__btn--yes" id="btnYes">
+          <span class="btn-icon">💖</span> More than my life
+        </button>
+        <button class="welcome__btn welcome__btn--no" id="btnNo">
+          <span class="btn-icon">🤢</span> Euuwwww
+        </button>
+      </div>
+    </div>
+
+    <!-- Floating hearts (injected by JS on yes) -->
+    <div class="particles" id="particles"></div>
+  </div>
+
+  <!-- ── Banned Screen ────────────────────────────────────── -->
+  <div id="bannedScreen" class="screen screen--banned screen--hidden">
+    <div class="banned__card">
+      <div class="banned__animation" id="bannedAnimation">
+        <div class="angry-face">😤</div>
+        <div class="banned__sparks">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+      <h1 class="banned__title">ACCESS DENIED</h1>
+      <p class="banned__subtitle">You are permanently banned from using this site.</p>
+      <div class="banned__stamp">BANNED</div>
+    </div>
+  </div>
+
+  <!-- ── Main App Screen ──────────────────────────────────── -->
+  <div id="appScreen" class="screen screen--app screen--hidden">
+
+    <!-- Hearts burst on entry -->
+    <div class="particles" id="appParticles"></div>
+
+    <div class="app__wrapper">
+
+      <!-- Header -->
+      <header class="app__header">
+        <div class="app__logo">✨</div>
+        <h1 class="app__title">Data Filter</h1>
+      </header>
+
+      <main class="card">
+
+        <!-- Upload row -->
+        <div class="upload-row">
+
+          <!-- Data file -->
+          <div class="upload-group">
+            <label class="upload-group__label" for="dataFile">
+              <span class="upload-group__icon">📄</span> Data File
+            </label>
+            <div class="drop-zone" id="dataDropZone" role="button" tabindex="0" aria-label="Upload data Excel file">
+              <div class="drop-zone__inner">
+                <span class="drop-zone__cloud">☁️</span>
+                <span class="drop-zone__cta">Drop or click</span>
+              </div>
+              <div class="drop-zone__filename" id="dataFileName" aria-live="polite"></div>
+              <input type="file" id="dataFile" class="drop-zone__input" accept=".xlsx,.xls,.csv" aria-label="Select data Excel file" />
+            </div>
+          </div>
+
+          <div class="upload-divider">
+            <span class="upload-divider__line"></span>
+            <span class="upload-divider__icon">⚡</span>
+            <span class="upload-divider__line"></span>
+          </div>
+
+          <!-- Master file -->
+          <div class="upload-group">
+            <label class="upload-group__label" for="masterFile">
+              <span class="upload-group__icon">📋</span> Master File
+            </label>
+            <div class="drop-zone" id="masterDropZone" role="button" tabindex="0" aria-label="Upload master Excel file">
+              <div class="drop-zone__inner">
+                <span class="drop-zone__cloud">☁️</span>
+                <span class="drop-zone__cta">Drop or click</span>
+              </div>
+              <div class="drop-zone__filename" id="masterFileName" aria-live="polite"></div>
+              <input type="file" id="masterFile" class="drop-zone__input" accept=".xlsx,.xls,.csv" aria-label="Select master Excel file" />
+            </div>
+          </div>
+
+        </div><!-- /.upload-row -->
+
+        <!-- Process button -->
+        <button id="processBtn" class="btn btn--process" disabled aria-disabled="true">
+          <span class="btn--process__icon">⚙️</span>
+          <span class="btn--process__text">Run Filter</span>
+        </button>
+
+        <!-- Status -->
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+
+        <!-- Stats grid -->
+        <div id="statsGrid" class="stats-grid">
+          <div class="stat-card stat-card--blue">
+            <div class="stat-card__number" id="statTotal">—</div>
+            <div class="stat-card__label">Total rows</div>
+          </div>
+          <div class="stat-card stat-card--green">
+            <div class="stat-card__number" id="statKept90085">—</div>
+            <div class="stat-card__label">90085 orders</div>
+          </div>
+          <div class="stat-card stat-card--orange">
+            <div class="stat-card__number" id="statKeptMatched">—</div>
+            <div class="stat-card__label">Name matched</div>
+          </div>
+          <div class="stat-card stat-card--red">
+            <div class="stat-card__number" id="statRemoved">—</div>
+            <div class="stat-card__label">Removed</div>
+          </div>
+        </div>
+
+        <!-- Download button -->
+        <button id="downloadBtn" class="btn btn--download" aria-label="Download filtered Excel file">
+          <span>⬇</span> Download Excel
+        </button>
+
+      </main>
+    </div>
+  </div>
+
+</body>
+</html>
