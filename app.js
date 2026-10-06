@@ -273,13 +273,20 @@ function updateProcessButton() {
 // ── Processing ─────────────────────────────────────────────────────────────────
 
 function handleProcess() {
-  try {
-    runFilterPipeline();
-  } catch (err) {
-    showStatus(`Unexpected error: ${err.message}`, 'error');
-  }
-}
+  setButtonLoading(dom.processBtn, true, '⚙️', 'Run Filter');
 
+  // Defer to next frame so the spinner renders before the synchronous work blocks the thread
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      try {
+        runFilterPipeline();
+      } catch (err) {
+        showStatus(`Unexpected error: ${err.message}`, 'error');
+        setButtonLoading(dom.processBtn, false, '⚙️', 'Run Filter');
+      }
+    }, 50);
+  });
+}
 function runFilterPipeline() {
   showStatus('Processing…', 'info');
   resetResults();
@@ -289,10 +296,12 @@ function runFilterPipeline() {
 
   if (dataRows.length === 0) {
     showStatus('Data file is empty or has only a header row.', 'error');
+    setButtonLoading(dom.processBtn, false, '⚙️', 'Run Filter');
     return;
   }
   if (masterRows.length === 0) {
     showStatus('Master file is empty or has only a header row.', 'error');
+    setButtonLoading(dom.processBtn, false, '⚙️', 'Run Filter');
     return;
   }
 
@@ -300,9 +309,9 @@ function runFilterPipeline() {
   const dataNameKey   = resolveColumnKey(dataRows[0],   COL_FULL_NAME);
   const masterNameKey = resolveColumnKey(masterRows[0], COL_FULL_NAME);
 
-  if (!orderKey)      { showStatus('Cannot find "Order" column in data file.',       'error'); return; }
-  if (!dataNameKey)   { showStatus('Cannot find "Full Name" column in data file.',   'error'); return; }
-  if (!masterNameKey) { showStatus('Cannot find "Full Name" column in master file.', 'error'); return; }
+  if (!orderKey)      { showStatus('Cannot find "Order" column in data file.',       'error'); setButtonLoading(dom.processBtn, false, '⚙️', 'Run Filter'); return; }
+  if (!dataNameKey)   { showStatus('Cannot find "Full Name" column in data file.',   'error'); setButtonLoading(dom.processBtn, false, '⚙️', 'Run Filter'); return; }
+  if (!masterNameKey) { showStatus('Cannot find "Full Name" column in master file.', 'error'); setButtonLoading(dom.processBtn, false, '⚙️', 'Run Filter'); return; }
 
   const masterNameSet  = buildNameSet(masterRows, masterNameKey);
   const result         = classifyRows(dataRows, orderKey, dataNameKey, masterNameSet);
@@ -324,6 +333,12 @@ function runFilterPipeline() {
   );
 
   dom.downloadBtn.classList.add('visible');
+
+  // Restore button and scroll results into view smoothly
+  setButtonLoading(dom.processBtn, false, '⚙️', 'Run Filter');
+  setTimeout(() => {
+    dom.statusEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 80);
 }
 
 // ── Filter Helpers ─────────────────────────────────────────────────────────────
@@ -397,21 +412,53 @@ function buildOutputWorkbook(rows) {
 
 function handleDownload() {
   if (!state.filteredWorkbook) return;
-  const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-  XLSX.writeFile(state.filteredWorkbook, `filtered_data_${timestamp}.xlsx`);
+
+  setButtonLoading(dom.downloadBtn, true, '⬇', 'Download Excel');
+
+  // Let the spinner render before XLSX blocks the thread
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      try {
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        XLSX.writeFile(state.filteredWorkbook, `filtered_data_${timestamp}.xlsx`);
+      } finally {
+        setButtonLoading(dom.downloadBtn, false, '⬇', 'Download Excel');
+      }
+    }, 50);
+  });
 }
 
 // ── UI Helpers ─────────────────────────────────────────────────────────────────
 
+/**
+ * Puts a button into a loading state (spinner + disabled) or restores it.
+ *
+ * @param {HTMLButtonElement} btn       - The button element.
+ * @param {boolean}           loading   - True to activate loading, false to restore.
+ * @param {string}            icon      - The icon character shown in normal state.
+ * @param {string}            label     - The text label shown in normal state.
+ */
+function setButtonLoading(btn, loading, icon, label) {
+  if (loading) {
+    btn.disabled = true;
+    btn.classList.add('btn--loading');
+    btn.innerHTML = `<span class="btn-spinner"></span> ${label}…`;
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('btn--loading');
+    btn.innerHTML = `<span>${icon}</span> ${label}`;
+  }
+}
 function showStatus(message, type) {
-  dom.statusEl.className   = `status status--${type}`;
-  dom.statusEl.textContent = message;
+  dom.statusEl.style.display = ''; // clear any inline override
+  dom.statusEl.className     = `status status--${type}`;
+  dom.statusEl.textContent   = message;
 }
 
 function hideStatus() {
-  dom.statusEl.className   = 'status';
-  dom.statusEl.textContent = '';
   dom.statusEl.style.display = 'none';
+  dom.statusEl.className     = 'status';
+  dom.statusEl.textContent   = '';
 }
 
 function renderStats(stats) {

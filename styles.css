@@ -563,6 +563,28 @@ body {
   letter-spacing: 0.05em;
 }
 
+/* ── Button loading state ────────────────────────────────── */
+.btn--loading {
+  position: relative;
+  cursor: not-allowed !important;
+  opacity: 0.85;
+}
+
+.btn--loading .btn-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 540px) {
   .card { padding: 24px 18px; }
